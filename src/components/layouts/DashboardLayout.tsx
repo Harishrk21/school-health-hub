@@ -21,10 +21,11 @@ import {
   Heart, LayoutDashboard, Users, FileText, Bell, Mail, 
   LogOut, Search, Syringe, Eye, AlertTriangle, Calendar,
   Building2, Upload, BarChart3, Droplets, UserCircle, Settings,
-  ClipboardList
+  ClipboardList, UserPlus, MessageSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserRole } from '@/types';
+import { GlobalEmergencySearch } from '@/components/GlobalEmergencySearch';
 
 interface NavItem {
   title: string;
@@ -48,13 +49,21 @@ const doctorNavItems: NavItem[] = [
 const adminNavItems: NavItem[] = [
   { title: 'Dashboard', url: '/admin', icon: LayoutDashboard },
   { title: 'Students', url: '/admin/students', icon: Users },
-  { title: 'Enroll Student', url: '/admin/enroll', icon: Upload },
-  { title: 'Health Summary', url: '/admin/health-summary', icon: ClipboardList },
+  { title: 'Enroll Student', url: '/admin/enroll', icon: UserPlus },
+  { title: 'Bulk Upload', url: '/admin/bulk-upload', icon: Upload },
+  { title: 'Emergency Lookup', url: '/admin/emergency', icon: AlertTriangle },
+  { title: 'Health Management', url: '/admin/health-summary', icon: ClipboardList },
   { title: 'Vaccinations', url: '/admin/vaccinations', icon: Syringe },
-  { title: 'Reports', url: '/admin/reports', icon: FileText },
+  { title: 'Vaccination Campaigns', url: '/admin/vaccinations/campaigns', icon: Calendar },
+  { title: 'Appointments', url: '/admin/appointments', icon: Calendar },
   { title: 'Blood Bank', url: '/admin/blood-bank', icon: Droplets },
+  { title: 'Reports', url: '/admin/reports', icon: FileText },
   { title: 'Analytics', url: '/admin/analytics', icon: BarChart3 },
+  { title: 'Alerts', url: '/admin/alerts', icon: Bell },
   { title: 'Messages', url: '/admin/messages', icon: Mail },
+  { title: 'Communication', url: '/admin/communication', icon: MessageSquare },
+  { title: 'Users', url: '/admin/users', icon: Users },
+  { title: 'Documents', url: '/admin/documents', icon: FileText },
 ];
 
 const bloodBankNavItems: NavItem[] = [
@@ -113,6 +122,7 @@ export default function DashboardLayout() {
 
   return (
     <SidebarProvider>
+      <GlobalEmergencySearch />
       <div className="min-h-screen flex w-full">
         <Sidebar className="border-r">
           <SidebarHeader className="border-b p-4">
@@ -181,7 +191,15 @@ export default function DashboardLayout() {
           <header className="h-14 border-b bg-card flex items-center gap-4 px-4">
             <SidebarTrigger />
             <div className="flex-1" />
-            <Button variant="ghost" size="icon">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => {
+                // Trigger global search
+                document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
+              }}
+              title="Emergency Search (Ctrl+K)"
+            >
               <Search className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="icon">

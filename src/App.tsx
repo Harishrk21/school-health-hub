@@ -27,6 +27,18 @@ import DoctorMessages from "./pages/doctor/DoctorMessages";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import StudentEnrollment from "./pages/admin/StudentEnrollment";
+import BloodBankIntegration from "./pages/admin/BloodBankIntegration";
+import BulkUpload from "./pages/admin/BulkUpload";
+import HealthManagement from "./pages/admin/HealthManagement";
+import VaccinationCampaigns from "./pages/admin/VaccinationCampaigns";
+import ReportsAnalytics from "./pages/admin/ReportsAnalytics";
+import AlertsManagement from "./pages/admin/AlertsManagement";
+import CommunicationHub from "./pages/admin/CommunicationHub";
+import AppointmentsCalendar from "./pages/admin/AppointmentsCalendar";
+import UserManagement from "./pages/admin/UserManagement";
+import DocumentManagement from "./pages/admin/DocumentManagement";
+import SystemSettings from "./pages/admin/SystemSettings";
 
 // Blood Bank Pages
 import BloodBankDashboard from "./pages/bloodbank/BloodBankDashboard";
@@ -68,13 +80,23 @@ const App = () => (
                 <Route index element={<AdminDashboard />} />
                 <Route path="students" element={<DoctorStudents />} />
                 <Route path="students/:id" element={<StudentDetail />} />
-                <Route path="enroll" element={<AdminDashboard />} />
-                <Route path="health-summary" element={<AdminDashboard />} />
+                <Route path="enroll" element={<StudentEnrollment />} />
+                <Route path="bulk-upload" element={<BulkUpload />} />
+                <Route path="health-summary" element={<HealthManagement />} />
+                <Route path="checkups" element={<HealthManagement />} />
                 <Route path="vaccinations" element={<DoctorVaccinations />} />
-                <Route path="reports" element={<DoctorReports />} />
-                <Route path="blood-bank" element={<BloodBankDashboard />} />
-                <Route path="analytics" element={<AdminDashboard />} />
+                <Route path="vaccinations/campaigns" element={<VaccinationCampaigns />} />
+                <Route path="reports" element={<ReportsAnalytics />} />
+                <Route path="analytics" element={<ReportsAnalytics />} />
+                <Route path="blood-bank" element={<BloodBankIntegration />} />
                 <Route path="messages" element={<DoctorMessages />} />
+                <Route path="emergency" element={<EmergencyLookup />} />
+                <Route path="alerts" element={<AlertsManagement />} />
+                <Route path="appointments" element={<AppointmentsCalendar />} />
+                <Route path="communication" element={<CommunicationHub />} />
+                <Route path="users" element={<UserManagement />} />
+                <Route path="documents" element={<DocumentManagement />} />
+                <Route path="settings" element={<SystemSettings />} />
               </Route>
 
               {/* Blood Bank Routes */}

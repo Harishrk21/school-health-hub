@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { StudentCard } from '@/components/shared/StudentCard';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,11 @@ import { BloodGroup } from '@/types';
 
 export default function DoctorStudents() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { students } = useData();
+  
+  // Determine base path based on current route
+  const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/doctor';
   const [searchTerm, setSearchTerm] = useState('');
   const [classFilter, setClassFilter] = useState<string>('all');
   const [bloodGroupFilter, setBloodGroupFilter] = useState<string>('all');
@@ -111,9 +115,9 @@ export default function DoctorStudents() {
             <StudentCard
               key={student.id}
               student={student}
-              onClick={() => navigate(`/doctor/students/${student.id}`)}
-              onViewDetails={() => navigate(`/doctor/students/${student.id}`)}
-              onGenerateReport={() => navigate(`/doctor/reports?student=${student.id}`)}
+              onClick={() => navigate(`${basePath}/students/${student.id}`)}
+              onViewDetails={() => navigate(`${basePath}/students/${student.id}`)}
+              onGenerateReport={() => navigate(`${basePath}/reports?student=${student.id}`)}
             />
           ))}
         </div>
@@ -126,7 +130,7 @@ export default function DoctorStudents() {
                   key={student.id}
                   student={student}
                   compact
-                  onClick={() => navigate(`/doctor/students/${student.id}`)}
+                  onClick={() => navigate(`${basePath}/students/${student.id}`)}
                 />
               ))}
             </div>

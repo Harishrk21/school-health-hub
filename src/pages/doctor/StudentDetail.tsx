@@ -9,16 +9,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   ArrowLeft, Droplets, Calendar, FileText, ClipboardList,
   Syringe, Eye, AlertTriangle, Phone, Mail, MapPin, Heart,
-  Pill, Activity, Scale, Ruler, Thermometer, TrendingUp
+  Pill, Activity, Scale, Ruler, Thermometer, TrendingUp,
+  Clock, Bell, MessageSquare, History, Settings, Download,
+  Printer, Plus, CheckCircle, XCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { GrowthChart } from '@/components/shared/GrowthChart';
+import { bloodBankAPI } from '@/services/bloodBankAPI';
+import { format } from 'date-fns';
+import { useMemo } from 'react';
 
 export default function StudentDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { 
     students, healthRecords, medicalConditions, allergies, 
-    emergencyContacts, vaccinations, visionTests 
+    emergencyContacts, vaccinations, visionTests, appointments,
+    alerts, messages
   } = useData();
 
   const student = students.find(s => s.id === id);
@@ -31,6 +38,11 @@ export default function StudentDetail() {
   const studentContacts = emergencyContacts.filter(c => c.studentId === id);
   const studentVaccinations = vaccinations.filter(v => v.studentId === id);
   const studentVisionTests = visionTests.filter(v => v.studentId === id);
+  const studentAppointments = appointments.filter(a => a.studentId === id);
+  const studentAlerts = alerts.filter(a => a.studentId === id);
+  const studentMessages = messages.filter(m => 
+    m.recipientId === id || m.senderId === id
+  );
 
   if (!student) {
     return (
@@ -41,7 +53,41 @@ export default function StudentDetail() {
     );
   }
 
-  const age = new Date().getFullYear() - new Date(student.dateOfBirth).getFullYear();
+  // Calculate age
+  const age = useMemo(() => {
+    const birthDate = new Date(student.dateOfBirth);
+    const today = new Date();
+    let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      calculatedAge--;
+    }
+    return calculatedAge;
+  }, [student.dateOfBirth]);
+
+  // Calculate health score
+  const healthScore = useMemo(() => {
+    let score = 100;
+    if (studentRecords.length === 0) score -= 20;
+    if (studentAllergies.some(a => a.severity === 'Life-threatening')) score -= 15;
+    if (studentConditions.some(c => c.severity === 'Severe')) score -= 10;
+    const overdueVax = studentVaccinations.filter(v => v.status === 'Overdue').length;
+    score -= overdueVax * 5;
+    return Math.max(0, Math.min(100, score));
+  }, [studentRecords, studentAllergies, studentConditions, studentVaccinations]);
+
+  // Calculate vaccination compliance
+  const vaccinationCompliance = useMemo(() => {
+    const completed = studentVaccinations.filter(v => v.status === 'Completed').length;
+    return studentVaccinations.length > 0 
+      ? Math.round((completed / studentVaccinations.length) * 100) 
+      : 0;
+  }, [studentVaccinations]);
+
+  // Check blood donation eligibility
+  const isEligibleForDonation = useMemo(() => {
+    return age >= 18; // Assuming weight check would be in health records
+  }, [age]);
 
   const bloodGroupColors: Record<string, string> = {
     'A+': 'bg-red-500', 'A-': 'bg-red-600',
@@ -153,15 +199,56 @@ export default function StudentDetail() {
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid grid-cols-5 w-full max-w-2xl">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="health">Health History</TabsTrigger>
-          <TabsTrigger value="vaccinations">Vaccinations</TabsTrigger>
-          <TabsTrigger value="vision">Vision</TabsTrigger>
-          <TabsTrigger value="emergency">Emergency</TabsTrigger>
+        <TabsList className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-12 w-full gap-1 overflow-x-auto">
+          <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
+          <TabsTrigger value="health" className="text-xs">Health</TabsTrigger>
+          <TabsTrigger value="vaccinations" className="text-xs">Vaccines</TabsTrigger>
+          <TabsTrigger value="vision" className="text-xs">Vision</TabsTrigger>
+          <TabsTrigger value="appointments" className="text-xs">Appointments</TabsTrigger>
+          <TabsTrigger value="blood" className="text-xs">Blood</TabsTrigger>
+          <TabsTrigger value="reports" className="text-xs">Reports</TabsTrigger>
+          <TabsTrigger value="emergency" className="text-xs">Emergency</TabsTrigger>
+          <TabsTrigger value="alerts" className="text-xs">Alerts</TabsTrigger>
+          <TabsTrigger value="messages" className="text-xs">Messages</TabsTrigger>
+          <TabsTrigger value="activity" className="text-xs">Activity</TabsTrigger>
+          <TabsTrigger value="settings" className="text-xs">Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
+          {/* Quick Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="pt-4 pb-4 text-center">
+                <Activity className="h-5 w-5 mx-auto text-primary mb-1" />
+                <p className="text-2xl font-bold">{healthScore}%</p>
+                <p className="text-xs text-muted-foreground">Health Score</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-4 text-center">
+                <Syringe className="h-5 w-5 mx-auto text-green-600 mb-1" />
+                <p className="text-2xl font-bold">{vaccinationCompliance}%</p>
+                <p className="text-xs text-muted-foreground">Vaccination Status</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-4 text-center">
+                <Calendar className="h-5 w-5 mx-auto text-blue-600 mb-1" />
+                <p className="text-2xl font-bold">
+                  {studentAppointments.filter(a => a.status === 'Scheduled').length}
+                </p>
+                <p className="text-xs text-muted-foreground">Upcoming</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-4 text-center">
+                <Droplets className="h-5 w-5 mx-auto text-red-600 mb-1" />
+                <p className="text-2xl font-bold">{student.bloodGroup}</p>
+                <p className="text-xs text-muted-foreground">Blood Group</p>
+              </CardContent>
+            </Card>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Medical Conditions */}
             <Card>
@@ -228,6 +315,15 @@ export default function StudentDetail() {
         </TabsContent>
 
         <TabsContent value="health" className="space-y-4">
+          {/* Growth Charts */}
+          {studentRecords.length > 1 && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <GrowthChart records={studentRecords} type="height" title="Height Progression" />
+              <GrowthChart records={studentRecords} type="weight" title="Weight Progression" />
+              <GrowthChart records={studentRecords} type="bmi" title="BMI Trend" />
+            </div>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle>Health Checkup History</CardTitle>
@@ -369,6 +465,143 @@ export default function StudentDetail() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="appointments" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <CardTitle>Appointments</CardTitle>
+            <Button onClick={() => navigate(`/admin/appointments?student=${student.id}`)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Schedule Appointment
+            </Button>
+          </div>
+          <Card>
+            <CardContent className="pt-6">
+              {studentAppointments.length > 0 ? (
+                <div className="space-y-4">
+                  {studentAppointments
+                    .sort((a, b) => new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime())
+                    .map(appointment => (
+                      <div key={appointment.id} className="p-4 rounded-lg border">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{appointment.appointmentType}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {format(new Date(appointment.appointmentDate), 'PPp')}
+                            </p>
+                          </div>
+                          <Badge variant={
+                            appointment.status === 'Completed' ? 'default' :
+                            appointment.status === 'Cancelled' ? 'secondary' :
+                            appointment.status === 'No-show' ? 'destructive' : 'outline'
+                          }>
+                            {appointment.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">No appointments scheduled</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="blood" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Droplets className="h-5 w-5 text-red-500" />
+                Blood Donation Hub
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 rounded-lg border-2 border-red-200 bg-red-50 dark:bg-red-950">
+                <div className="text-center">
+                  <p className="text-4xl font-bold text-red-600 mb-2">{student.bloodGroup}</p>
+                  <p className="text-sm text-muted-foreground">Blood Group</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Card>
+                  <CardContent className="pt-4">
+                    <p className="text-sm text-muted-foreground mb-1">Eligibility Status</p>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span>Age (18+)</span>
+                        {age >= 18 ? (
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <XCircle className="h-4 w-4 text-red-600" />
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span>Weight (50kg+)</span>
+                        {latestRecord && latestRecord.weight >= 50 ? (
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <XCircle className="h-4 w-4 text-red-600" />
+                        )}
+                      </div>
+                    </div>
+                    <Badge className={`mt-3 w-full justify-center ${
+                      isEligibleForDonation ? 'bg-green-600' : 'bg-gray-500'
+                    }`}>
+                      {isEligibleForDonation ? 'Eligible' : 'Not Eligible'}
+                    </Badge>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="space-y-2">
+                <Button className="w-full" onClick={() => navigate(`/admin/blood-bank?search=${student.bloodGroup}`)}>
+                  <Droplets className="h-4 w-4 mr-2" />
+                  Find Blood Banks
+                </Button>
+                <Button variant="outline" className="w-full" onClick={() => navigate(`/admin/blood-bank?request=${student.bloodGroup}`)}>
+                  Request Blood (Emergency)
+                </Button>
+                {isEligibleForDonation && (
+                  <Button variant="outline" className="w-full">
+                    Register as Donor
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Health Reports</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <Button variant="outline" className="w-full justify-start">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Complete Health Report
+                  <Download className="h-4 w-4 ml-auto" />
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Vaccination Certificate
+                  <Download className="h-4 w-4 ml-auto" />
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Vision Test Report
+                  <Download className="h-4 w-4 ml-auto" />
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print Emergency Card
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="emergency" className="space-y-4">
           <Card>
             <CardHeader>
@@ -411,6 +644,127 @@ export default function StudentDetail() {
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="alerts" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Alerts & Notifications</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {studentAlerts.length > 0 ? (
+                <div className="space-y-3">
+                  {studentAlerts.map(alert => (
+                    <div key={alert.id} className={cn(
+                      "p-4 rounded-lg border",
+                      !alert.isRead && "border-primary bg-primary/5"
+                    )}>
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge variant={
+                          alert.severity === 'Critical' ? 'destructive' :
+                          alert.severity === 'High' ? 'default' :
+                          alert.severity === 'Medium' ? 'secondary' : 'outline'
+                        }>
+                          {alert.severity}
+                        </Badge>
+                        {!alert.isRead && (
+                          <Badge variant="outline">New</Badge>
+                        )}
+                      </div>
+                      <p className="font-medium mb-1">{alert.alertType}</p>
+                      <p className="text-sm text-muted-foreground">{alert.message}</p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {format(new Date(alert.createdAt), 'PPp')}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">No alerts</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="messages" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Messages</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {studentMessages.length > 0 ? (
+                <div className="space-y-3">
+                  {studentMessages.map(message => (
+                    <div key={message.id} className="p-4 rounded-lg border">
+                      <p className="font-medium mb-1">{message.subject}</p>
+                      <p className="text-sm text-muted-foreground">{message.message}</p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {format(new Date(message.createdAt), 'PPp')}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">No messages</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="activity" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Activity Log</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {studentRecords.length > 0 && (
+                  <div className="p-3 rounded-lg border">
+                    <p className="text-sm font-medium">Health Checkup Recorded</p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(studentRecords[0].checkupDate), 'PPp')}
+                    </p>
+                  </div>
+                )}
+                {studentVaccinations.filter(v => v.status === 'Completed').length > 0 && (
+                  <div className="p-3 rounded-lg border">
+                    <p className="text-sm font-medium">Vaccination Administered</p>
+                    <p className="text-xs text-muted-foreground">
+                      {studentVaccinations.filter(v => v.status === 'Completed').length} vaccines completed
+                    </p>
+                  </div>
+                )}
+                <p className="text-muted-foreground text-center py-4 text-sm">
+                  Complete activity log coming soon
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="settings" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Student Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button variant="outline" className="w-full justify-start">
+                <Settings className="h-4 w-4 mr-2" />
+                Edit Student Profile
+              </Button>
+              <Button variant="outline" className="w-full justify-start">
+                <FileText className="h-4 w-4 mr-2" />
+                Export All Data
+              </Button>
+              <Button variant="outline" className="w-full justify-start">
+                <Printer className="h-4 w-4 mr-2" />
+                Print Health Card
+              </Button>
+              <Button variant="destructive" className="w-full justify-start">
+                Archive Student
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
