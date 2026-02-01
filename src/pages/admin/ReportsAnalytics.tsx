@@ -13,12 +13,15 @@ import {
 } from 'lucide-react';
 import { getBMIStats, getVaccinationStats, getBloodGroupStats } from '@/data/mockData';
 import { BMIChart } from '@/components/shared/BMIChart';
+import { generatePDF, generatePDFFromElement, generateCSV, generateExcel } from '@/utils/pdfGenerator';
+import { toast } from 'sonner';
 
 export default function ReportsAnalytics() {
   const { students, healthRecords, vaccinations, visionTests } = useData();
   const [reportType, setReportType] = useState<string>('student');
   const [selectedStudent, setSelectedStudent] = useState<string>('all');
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | '1y' | 'all'>('all');
+  const [activeTab, setActiveTab] = useState<string>('reports');
   const [includeSections, setIncludeSections] = useState({
     personalInfo: true,
     healthMetrics: true,
@@ -33,12 +36,115 @@ export default function ReportsAnalytics() {
   const bloodStats = getBloodGroupStats();
 
   const handleGenerateReport = () => {
-    // Mock report generation
-    alert('Report generation feature - would generate PDF/Excel report based on selected parameters');
+    try {
+      const student = selectedStudent !== 'all' ? students.find(s => s.id === selectedStudent) : null;
+      generatePDF({
+        title: 'Custom Health Report',
+        studentName: student ? `${student.firstName} ${student.lastName}` : 'All Students',
+        dateRange: dateRange !== 'all' ? dateRange : 'All Time',
+        sections: Object.entries(includeSections)
+          .filter(([_, included]) => included)
+          .map(([key]) => key),
+      });
+      toast.success('PDF report generated. Please use your browser\'s print dialog to save as PDF.');
+    } catch (error) {
+      toast.error('Failed to generate PDF. Please try again.');
+      console.error('PDF generation error:', error);
+    }
   };
 
   const handleExportData = (format: 'pdf' | 'csv' | 'excel') => {
-    alert(`Exporting data as ${format.toUpperCase()}...`);
+    try {
+      if (format === 'pdf') {
+        // Generate PDF based on active tab
+        let elementId: string | null = null;
+        let title = 'Health Reports & Analytics';
+        
+        if (activeTab === 'analytics') {
+          elementId = 'analytics-content';
+          title = 'Health Analytics Report';
+        } else if (activeTab === 'reports') {
+          elementId = 'reports-content';
+          title = 'Health Reports';
+        } else if (activeTab === 'custom') {
+          elementId = 'custom-report-content';
+          title = 'Custom Health Report';
+        }
+        
+        // Try to generate from element if it exists
+        if (elementId) {
+          const element = document.getElementById(elementId);
+          if (element) {
+            generatePDFFromElement(elementId, title);
+            toast.success('PDF report generated. Please use your browser\'s print dialog to save as PDF.');
+            return;
+          }
+        }
+        
+        // Fallback: Generate generic PDF
+        generatePDF({
+          title: title,
+          dateRange: dateRange !== 'all' ? dateRange : 'All Time',
+          sections: Object.entries(includeSections)
+            .filter(([_, included]) => included)
+            .map(([key]) => key),
+        });
+        toast.success('PDF report generated. Please use your browser\'s print dialog to save as PDF.');
+      } else if (format === 'csv') {
+        // Export students data as CSV
+        const exportData = students.map(s => ({
+          'Student ID': s.studentId,
+          'Roll Number': s.rollNumber,
+          'First Name': s.firstName,
+          'Last Name': s.lastName,
+          'Class': s.class,
+          'Section': s.section,
+          'Blood Group': s.bloodGroup,
+          'Date of Birth': s.dateOfBirth,
+        }));
+        generateCSV(exportData, 'students_export');
+        toast.success('CSV file downloaded successfully');
+      } else if (format === 'excel') {
+        // Export as Excel (CSV format)
+        const exportData = students.map(s => ({
+          'Student ID': s.studentId,
+          'Roll Number': s.rollNumber,
+          'First Name': s.firstName,
+          'Last Name': s.lastName,
+          'Class': s.class,
+          'Section': s.section,
+          'Blood Group': s.bloodGroup,
+          'Date of Birth': s.dateOfBirth,
+        }));
+        generateExcel(exportData, 'students_export');
+        toast.success('Excel file downloaded successfully');
+      }
+    } catch (error) {
+      toast.error(`Failed to export as ${format.toUpperCase()}. Please try again.`);
+      console.error('Export error:', error);
+    }
+  };
+
+  const handleDownloadReport = (reportType: string) => {
+    try {
+      const reportTitles: Record<string, string> = {
+        'Student Health Summary': 'Student Health Summary Report',
+        'Class Health Overview': 'Class Health Overview Report',
+        'Vaccination Coverage Report': 'Vaccination Coverage Report',
+        'BMI Analysis Report': 'BMI Analysis Report',
+        'Vision Test Results': 'Vision Test Results Report',
+        'Medical Conditions Report': 'Medical Conditions Report',
+      };
+
+      generatePDF({
+        title: reportTitles[reportType] || reportType,
+        dateRange: dateRange !== 'all' ? dateRange : 'All Time',
+      });
+      toast.success('PDF report generated. Please use your browser\'s print dialog to save as PDF.');
+    } catch (error) {
+      toast.error('Failed to generate PDF. Please try again.');
+      console.error('PDF generation error:', error);
+    }
   };
 
   return (
@@ -48,7 +154,7 @@ export default function ReportsAnalytics() {
         <p className="text-muted-foreground">Generate reports and view analytics</p>
       </div>
 
-      <Tabs defaultValue="reports" className="space-y-4">
+      <Tabs defaultValue="reports" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -57,6 +163,7 @@ export default function ReportsAnalytics() {
 
         {/* Reports Tab */}
         <TabsContent value="reports" className="space-y-4">
+          <div id="reports-content">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
@@ -64,32 +171,56 @@ export default function ReportsAnalytics() {
                 <CardDescription>Quick access to common reports</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => handleDownloadReport('Student Health Summary')}
+                >
                   <FileText className="h-4 w-4 mr-2" />
                   Student Health Summary
                   <Download className="h-4 w-4 ml-auto" />
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => handleDownloadReport('Class Health Overview')}
+                >
                   <Users className="h-4 w-4 mr-2" />
                   Class Health Overview
                   <Download className="h-4 w-4 ml-auto" />
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => handleDownloadReport('Vaccination Coverage Report')}
+                >
                   <Syringe className="h-4 w-4 mr-2" />
                   Vaccination Coverage Report
                   <Download className="h-4 w-4 ml-auto" />
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => handleDownloadReport('BMI Analysis Report')}
+                >
                   <BarChart3 className="h-4 w-4 mr-2" />
                   BMI Analysis Report
                   <Download className="h-4 w-4 ml-auto" />
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => handleDownloadReport('Vision Test Results')}
+                >
                   <Eye className="h-4 w-4 mr-2" />
                   Vision Test Results
                   <Download className="h-4 w-4 ml-auto" />
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => handleDownloadReport('Medical Conditions Report')}
+                >
                   <Heart className="h-4 w-4 mr-2" />
                   Medical Conditions Report
                   <Download className="h-4 w-4 ml-auto" />
@@ -118,11 +249,12 @@ export default function ReportsAnalytics() {
               </CardContent>
             </Card>
           </div>
+          </div>
         </TabsContent>
 
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div id="analytics-content" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <BMIChart data={bmiStats} />
 
             <Card>
@@ -200,6 +332,7 @@ export default function ReportsAnalytics() {
 
         {/* Custom Builder Tab */}
         <TabsContent value="custom" className="space-y-4">
+          <div id="custom-report-content">
           <Card>
             <CardHeader>
               <CardTitle>Custom Report Builder</CardTitle>
@@ -342,6 +475,7 @@ export default function ReportsAnalytics() {
               </Button>
             </CardContent>
           </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

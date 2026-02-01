@@ -125,17 +125,18 @@ export default function DashboardLayout() {
       <GlobalEmergencySearch />
       <div className="min-h-screen flex w-full">
         <Sidebar className="border-r">
-          <SidebarHeader className="border-b p-4">
-            <div className="flex items-center gap-3">
-              <div className={cn("p-2 rounded-lg text-white", roleColor)}>
-                <Heart className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-sm">SHIS</h2>
-                <p className="text-xs text-muted-foreground">{portalTitle}</p>
-              </div>
-            </div>
-          </SidebarHeader>
+                  <SidebarHeader className="border-b p-4">
+                    <div className="flex items-center gap-3">
+                      <div className={cn("p-2 rounded-lg text-white", roleColor)}>
+                        <Heart className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <h2 className="font-bold text-base">SHIS</h2>
+                        <p className="text-xs text-muted-foreground">School Health Information System</p>
+                        <p className="text-xs text-muted-foreground">{portalTitle}</p>
+                      </div>
+                    </div>
+                  </SidebarHeader>
 
           <SidebarContent>
             <SidebarGroup>

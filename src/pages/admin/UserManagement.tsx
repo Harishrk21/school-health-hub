@@ -18,6 +18,7 @@ import { User, UserRole } from '@/types';
 import { toast } from 'sonner';
 import { mockUsers } from '@/data/mockData';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 export default function UserManagement() {
   const { students } = useData();

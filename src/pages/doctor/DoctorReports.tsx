@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Download, Eye, Calendar, User } from 'lucide-react';
+import { generatePDF } from '@/utils/pdfGenerator';
+import { toast } from 'sonner';
 
 export default function DoctorReports() {
   const { students, healthRecords } = useData();
@@ -23,6 +25,33 @@ export default function DoctorReports() {
     };
   });
 
+  const handleGenerateReport = (type: string) => {
+    try {
+      generatePDF({
+        title: type,
+        dateRange: 'All Time',
+      });
+      toast.success('PDF report generated. Please use your browser\'s print dialog to save as PDF.');
+    } catch (error) {
+      toast.error('Failed to generate PDF. Please try again.');
+      console.error('PDF generation error:', error);
+    }
+  };
+
+  const handleDownloadStudentReport = (student: typeof students[0]) => {
+    try {
+      generatePDF({
+        title: 'Individual Health Report',
+        studentName: `${student.firstName} ${student.lastName}`,
+        dateRange: 'All Time',
+      });
+      toast.success('PDF report generated. Please use your browser\'s print dialog to save as PDF.');
+    } catch (error) {
+      toast.error('Failed to generate PDF. Please try again.');
+      console.error('PDF generation error:', error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -33,7 +62,7 @@ export default function DoctorReports() {
           </h1>
           <p className="text-muted-foreground">Generate and manage health reports</p>
         </div>
-        <Button>
+        <Button onClick={() => handleGenerateReport('Health Summary Report')}>
           <FileText className="h-4 w-4 mr-2" />
           Generate Report
         </Button>
@@ -41,21 +70,21 @@ export default function DoctorReports() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow">
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleGenerateReport('Individual Health Report')}>
           <CardContent className="pt-6 text-center">
             <FileText className="h-10 w-10 mx-auto mb-3 text-primary" />
             <h3 className="font-semibold">Individual Health Report</h3>
             <p className="text-sm text-muted-foreground mt-1">Generate for a single student</p>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow">
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleGenerateReport('Class Health Summary')}>
           <CardContent className="pt-6 text-center">
             <FileText className="h-10 w-10 mx-auto mb-3 text-primary" />
             <h3 className="font-semibold">Class Health Summary</h3>
             <p className="text-sm text-muted-foreground mt-1">Aggregate report by class</p>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow">
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleGenerateReport('Vaccination Report')}>
           <CardContent className="pt-6 text-center">
             <FileText className="h-10 w-10 mx-auto mb-3 text-primary" />
             <h3 className="font-semibold">Vaccination Report</h3>
@@ -93,7 +122,11 @@ export default function DoctorReports() {
                     <Eye className="h-3 w-3 mr-1" />
                     View
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleDownloadStudentReport(report.student)}
+                  >
                     <Download className="h-3 w-3 mr-1" />
                     PDF
                   </Button>
