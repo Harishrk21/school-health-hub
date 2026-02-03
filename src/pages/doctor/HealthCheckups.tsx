@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,8 +20,18 @@ import { toast } from 'sonner';
 export default function HealthCheckups() {
   const { students, addHealthRecord } = useData();
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
+  const [manuallySelectedStudent, setManuallySelectedStudent] = useState<string | null>(null);
+
+  // Get student ID from URL - this is the primary source of truth
+  const studentIdFromUrl = searchParams.get('student');
+  
+  // Use URL parameter if available, otherwise use manually selected student
+  const selectedStudent = studentIdFromUrl || manuallySelectedStudent;
+
+  // Don't clear the URL parameter - keep it visible so the student stays selected
+  // The URL parameter serves as the source of truth for which student is selected
   const [formData, setFormData] = useState({
     height: '',
     weight: '',
@@ -80,8 +91,14 @@ export default function HealthCheckups() {
     addHealthRecord(newRecord);
     toast.success('Health checkup recorded successfully!');
     setFormData({ height: '', weight: '', bloodPressure: '', temperature: '', pulseRate: '', notes: '' });
-    setSelectedStudent(null);
+    setManuallySelectedStudent(null);
     setSearchTerm('');
+    // Clear URL param if it exists
+    if (searchParams.has('student')) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('student');
+      setSearchParams(newParams, { replace: true });
+    }
   };
 
   const bmi = calculateBMI();
@@ -124,7 +141,7 @@ export default function HealthCheckups() {
                       selectedStudent === s.id ? 'bg-primary/10 border-primary' : 'hover:bg-muted'
                     }`}
                     onClick={() => {
-                      setSelectedStudent(s.id);
+                      setManuallySelectedStudent(s.id);
                       setSearchTerm('');
                     }}
                   >
@@ -158,7 +175,15 @@ export default function HealthCheckups() {
                   variant="ghost"
                   size="sm"
                   className="mt-3 w-full"
-                  onClick={() => setSelectedStudent(null)}
+                  onClick={() => {
+                    setManuallySelectedStudent(null);
+                    // Also clear URL param if it exists
+                    if (searchParams.has('student')) {
+                      const newParams = new URLSearchParams(searchParams);
+                      newParams.delete('student');
+                      setSearchParams(newParams, { replace: true });
+                    }
+                  }}
                 >
                   Change Student
                 </Button>

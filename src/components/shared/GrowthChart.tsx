@@ -130,3 +130,4 @@ export function GrowthChart({ records, type, title }: GrowthChartProps) {
   );
 }
 
+
