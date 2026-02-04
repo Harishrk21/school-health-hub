@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,12 +16,16 @@ import {
   Clock, CheckCircle, AlertCircle, TrendingUp
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { RecordCheckupForm } from '@/components/shared/RecordCheckupForm';
+import { toast } from 'sonner';
 
 export default function HealthManagement() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { students, healthRecords, appointments, addHealthRecord, addAppointment } = useData();
   const [selectedTab, setSelectedTab] = useState('schedule');
   const [classFilter, setClassFilter] = useState<string>('all');
+  const [recordStudentId, setRecordStudentId] = useState<string | null>(null);
 
   // Filter students by class
   const filteredStudents = classFilter === 'all' 
@@ -155,81 +160,40 @@ export default function HealthManagement() {
           </Card>
         </TabsContent>
 
-        {/* Record Checkup Tab */}
+        {/* Record Checkup Tab (shared form with Doctor Health Checkups) */}
         <TabsContent value="record" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Record Health Checkup</CardTitle>
-              <CardDescription>Enter health checkup details for a student</CardDescription>
+              <CardDescription>Enter health checkup details for a student (same form as doctor checkups)</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Select Student</Label>
-                <Select>
+                <Label>Select student</Label>
+                <Select value={recordStudentId ?? ''} onValueChange={(v) => setRecordStudentId(v || null)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Search and select student" />
                   </SelectTrigger>
                   <SelectContent>
-                    {students.map(s => (
+                    {students.map((s) => (
                       <SelectItem key={s.id} value={s.id}>
-                        {s.firstName} {s.lastName} - {s.rollNumber}
+                        {s.firstName} {s.lastName} – {s.rollNumber}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Checkup Date</Label>
-                  <Input type="date" defaultValue={new Date().toISOString().split('T')[0]} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Checkup Type</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="annual">Annual Checkup</SelectItem>
-                      <SelectItem value="followup">Follow-up</SelectItem>
-                      <SelectItem value="emergency">Emergency</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Height (cm)</Label>
-                  <Input type="number" placeholder="165.5" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Weight (kg)</Label>
-                  <Input type="number" placeholder="58.2" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Blood Pressure</Label>
-                  <Input placeholder="120/80" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Temperature (°C)</Label>
-                  <Input type="number" placeholder="36.5" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Notes</Label>
-                <Textarea placeholder="Examination notes, observations, recommendations..." />
-              </div>
-
-              <Button className="w-full">
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Save Checkup Record
-              </Button>
+              {user && (
+                <RecordCheckupForm
+                  studentId={recordStudentId}
+                  doctorId={user.id}
+                  onSubmit={(record) => {
+                    addHealthRecord(record);
+                    toast.success('Health checkup recorded');
+                  }}
+                  onSuccess={() => setRecordStudentId(null)}
+                />
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -8,16 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { 
-  Bell, Plus, AlertTriangle, CheckCircle, Clock, 
-  Filter, Search, Mail, MessageSquare
-} from 'lucide-react';
-import { format } from 'date-fns';
+import { Plus, Search } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Alert } from '@/types';
+import { AlertsList } from '@/components/shared/AlertsList';
 
 export default function AlertsManagement() {
   const { alerts, students, addAlert, markAlertRead } = useData();
@@ -315,7 +310,7 @@ export default function AlertsManagement() {
         </CardContent>
       </Card>
 
-      {/* Alerts Table */}
+      {/* Alerts List (shared with Doctor Alerts) */}
       <Card>
         <CardHeader>
           <CardTitle>All Alerts</CardTitle>
@@ -324,82 +319,13 @@ export default function AlertsManagement() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {filteredAlerts.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Student</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Severity</TableHead>
-                  <TableHead>Message</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAlerts.map(alert => {
-                  const student = students.find(s => s.id === alert.studentId);
-                  return (
-                    <TableRow key={alert.id} className={!alert.isRead ? 'bg-primary/5' : ''}>
-                      <TableCell>
-                        {student ? `${student.firstName} ${student.lastName}` : 'All Students'}
-                      </TableCell>
-                      <TableCell>{alert.alertType}</TableCell>
-                      <TableCell>
-                        <Badge variant={
-                          alert.severity === 'Critical' ? 'destructive' :
-                          alert.severity === 'High' ? 'default' :
-                          alert.severity === 'Medium' ? 'secondary' : 'outline'
-                        }>
-                          {alert.severity}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="max-w-md truncate">{alert.message}</TableCell>
-                      <TableCell>
-                        {format(new Date(alert.createdAt), 'MMM d, yyyy')}
-                      </TableCell>
-                      <TableCell>
-                        {alert.resolvedAt ? (
-                          <Badge variant="outline" className="bg-green-50 text-green-700">
-                            Resolved
-                          </Badge>
-                        ) : alert.isRead ? (
-                          <Badge variant="outline">Read</Badge>
-                        ) : (
-                          <Badge variant="default">Unread</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {!alert.isRead && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => markAlertRead(alert.id)}
-                            >
-                              Mark Read
-                            </Button>
-                          )}
-                          {!alert.resolvedAt && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleMarkResolved(alert.id)}
-                            >
-                              Resolve
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-muted-foreground text-center py-8">No alerts found</p>
-          )}
+          <AlertsList
+            alerts={filteredAlerts}
+            students={students}
+            onMarkRead={markAlertRead}
+            onResolve={handleMarkResolved}
+            showResolve
+          />
         </CardContent>
       </Card>
     </div>

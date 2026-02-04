@@ -60,8 +60,7 @@ const adminNavItems: NavItem[] = [
   { title: 'Reports', url: '/admin/reports', icon: FileText },
   { title: 'Analytics', url: '/admin/analytics', icon: BarChart3 },
   { title: 'Alerts', url: '/admin/alerts', icon: Bell },
-  { title: 'Messages', url: '/admin/messages', icon: Mail },
-  { title: 'Communication', url: '/admin/communication', icon: MessageSquare },
+  { title: 'Messages & Communication', url: '/admin/communication', icon: MessageSquare },
   { title: 'Users', url: '/admin/users', icon: Users },
   { title: 'Documents', url: '/admin/documents', icon: FileText },
 ];

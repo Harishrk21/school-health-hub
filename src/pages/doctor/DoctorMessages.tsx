@@ -22,6 +22,9 @@ export default function DoctorMessages() {
   const [showCompose, setShowCompose] = useState(false);
   const [newMessage, setNewMessage] = useState({ recipientId: '', subject: '', message: '' });
 
+  // Only school admin can send messages; doctors and parents can only view inbox/sent
+  const canSendMessages = user?.role === 'school_admin';
+
   const inboxMessages = messages.filter(m => m.recipientId === user?.id);
   const sentMessages = messages.filter(m => m.senderId === user?.id);
 
@@ -52,15 +55,21 @@ export default function DoctorMessages() {
             <Mail className="h-6 w-6 text-primary" />
             Messages
           </h1>
-          <p className="text-muted-foreground">Communicate with parents and staff</p>
+          <p className="text-muted-foreground">
+            {canSendMessages
+              ? 'Communicate with parents and staff'
+              : 'Only school admin can send messages. View your inbox below.'}
+          </p>
         </div>
-        <Button onClick={() => setShowCompose(true)}>
-          <Send className="h-4 w-4 mr-2" />
-          Compose
-        </Button>
+        {canSendMessages && (
+          <Button onClick={() => setShowCompose(true)}>
+            <Send className="h-4 w-4 mr-2" />
+            Compose
+          </Button>
+        )}
       </div>
 
-      {showCompose ? (
+      {canSendMessages && showCompose ? (
         <Card>
           <CardHeader>
             <CardTitle>New Message</CardTitle>
@@ -168,12 +177,14 @@ export default function DoctorMessages() {
                         {new Date(selectedMessage.createdAt).toLocaleString()}
                       </p>
                     </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline">
-                        <Reply className="h-4 w-4 mr-1" />
-                        Reply
-                      </Button>
-                    </div>
+                    {canSendMessages && (
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline">
+                          <Reply className="h-4 w-4 mr-1" />
+                          Reply
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   <div className="p-4 bg-muted rounded-lg">
                     <p className="whitespace-pre-wrap">{selectedMessage.message}</p>

@@ -28,12 +28,20 @@ interface DataContextType {
   deleteStudent: (id: string) => void;
   
   addHealthRecord: (record: HealthRecord) => void;
+  updateHealthRecord: (id: string, data: Partial<HealthRecord>) => void;
   addMedicalCondition: (condition: MedicalCondition) => void;
+  updateMedicalCondition: (id: string, data: Partial<MedicalCondition>) => void;
+  deleteMedicalCondition: (id: string) => void;
   addAllergy: (allergy: Allergy) => void;
+  updateAllergy: (id: string, data: Partial<Allergy>) => void;
+  deleteAllergy: (id: string) => void;
   addEmergencyContact: (contact: EmergencyContact) => void;
+  updateEmergencyContact: (id: string, data: Partial<EmergencyContact>) => void;
+  deleteEmergencyContact: (id: string) => void;
   addVaccination: (vaccination: Vaccination) => void;
   updateVaccination: (id: string, data: Partial<Vaccination>) => void;
   addVisionTest: (test: VisionTest) => void;
+  updateVisionTest: (id: string, data: Partial<VisionTest>) => void;
   
   addAlert: (alert: Alert) => void;
   markAlertRead: (id: string) => void;
@@ -145,14 +153,32 @@ export function DataProvider({ children }: { children: ReactNode }) {
     deleteStudent: (id) => setStudents(prev => prev.filter(s => s.id !== id)),
 
     addHealthRecord: (record) => setHealthRecords(prev => [...prev, record]),
+    updateHealthRecord: (id, data) => setHealthRecords(prev => 
+      prev.map(r => r.id === id ? { ...r, ...data } : r)
+    ),
     addMedicalCondition: (condition) => setMedicalConditions(prev => [...prev, condition]),
+    updateMedicalCondition: (id, data) => setMedicalConditions(prev => 
+      prev.map(c => c.id === id ? { ...c, ...data } : c)
+    ),
+    deleteMedicalCondition: (id) => setMedicalConditions(prev => prev.filter(c => c.id !== id)),
     addAllergy: (allergy) => setAllergies(prev => [...prev, allergy]),
+    updateAllergy: (id, data) => setAllergies(prev => 
+      prev.map(a => a.id === id ? { ...a, ...data } : a)
+    ),
+    deleteAllergy: (id) => setAllergies(prev => prev.filter(a => a.id !== id)),
     addEmergencyContact: (contact) => setEmergencyContacts(prev => [...prev, contact]),
+    updateEmergencyContact: (id, data) => setEmergencyContacts(prev => 
+      prev.map(c => c.id === id ? { ...c, ...data } : c)
+    ),
+    deleteEmergencyContact: (id) => setEmergencyContacts(prev => prev.filter(c => c.id !== id)),
     addVaccination: (vaccination) => setVaccinations(prev => [...prev, vaccination]),
     updateVaccination: (id, data) => setVaccinations(prev => 
       prev.map(v => v.id === id ? { ...v, ...data } : v)
     ),
     addVisionTest: (test) => setVisionTests(prev => [...prev, test]),
+    updateVisionTest: (id, data) => setVisionTests(prev => 
+      prev.map(t => t.id === id ? { ...t, ...data } : t)
+    ),
 
     addAlert: (alert) => setAlerts(prev => [alert, ...prev]),
     markAlertRead: (id) => setAlerts(prev => 
