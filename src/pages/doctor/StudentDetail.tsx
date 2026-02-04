@@ -494,7 +494,10 @@ export default function StudentDetail() {
               </div>
             </div>
             <div className="flex flex-col gap-2">
-              <Button onClick={() => navigate(`/doctor/checkups?student=${student.id}`)}>
+              <Button onClick={() => {
+                const url = `/doctor/checkups?student=${encodeURIComponent(student.id)}`;
+                navigate(url);
+              }}>
                 <ClipboardList className="h-4 w-4 mr-2" />
                 Record Checkup
               </Button>
